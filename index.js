@@ -12,13 +12,24 @@ function parseValue(value) {
   const { type, expression } = value
   switch (type) {
     case 'JSXExpressionContainer': {
-      return expression.extra.raw
+      return parseExpression(expression)
     }
     case 'StringLiteral': {
       return value.extra.raw
     }
   }
 }
+
+function parseExpression(expression) {
+  const { type, extra, object, property } = expression
+  switch (type) {
+    case 'NumericLiteral':
+      return extra.raw
+    case 'MemberExpression':
+      return `${object.name}.${property.name}`
+  }
+}
+
 let currentClassName;
 module.exports = function () {
   return {
@@ -29,24 +40,27 @@ module.exports = function () {
       },
       JSXElement(path) {
         const { openingElement, children } = path.node
-        const { attributes, name } = openingElement
+        const { attributes, name: rootTag } = openingElement
         let ret = `    const world = GameWorld.Instance
-  const root = world.entities.create()
-  const ${getComponentName(currentClassName)} = root.assign(new ${currentClassName}())`
+          const root = world.entities.create()
+          const ${getComponentName(currentClassName)} = root.assign(new ${currentClassName}())`
         children.forEach(element => {
           const { openingElement, children, type } = element
           if (type !== 'JSXElement') return;
           const { attributes, name } = openingElement
           const componentName = name.name
+          ret += `\n    const ${getComponentName(componentName)} = root.assign(new ${componentName}())`
           attributes.forEach(({ name, value }) => {
-            ret += `\n    const ${getComponentName(componentName)} = root.assign(new ${componentName}(${parseValue(value)}))`
             if (name.name === 'ref') {
               ret += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(componentName)}`
+            } else {
+              ret += `\n    ${getComponentName(componentName)}.${name.name} = ${parseValue(value)}`
             }
           })
         });
+        ret += `\n    const ${getComponentName(rootTag.name)} = root.getComponent(${rootTag.name})`
         attributes.forEach(({ name, value }) => {
-          ret += `\n    ${getComponentName(currentClassName)}.${name.name} = ${parseValue(value)}`
+          ret += `\n    ${getComponentName(rootTag.name)}.${name.name} = ${parseValue(value)}`
         })
         ret += `\n   return ${getComponentName(currentClassName)}`
         console.log(currentClassName, ret)
