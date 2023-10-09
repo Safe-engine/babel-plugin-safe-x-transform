@@ -42,8 +42,8 @@ module.exports = function () {
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = `    const world = GameWorld.Instance
-          const root = world.entities.create()
-          const ${getComponentName(currentClassName)} = root.assign(new ${currentClassName}())`
+          const root = world.entities.create()`
+        let refs = '';
         children.forEach(element => {
           const { openingElement, children, type } = element
           if (type !== 'JSXElement') return;
@@ -52,7 +52,7 @@ module.exports = function () {
           ret += `\n    const ${getComponentName(componentName)} = root.assign(new ${componentName}())`
           attributes.forEach(({ name, value }) => {
             if (name.name === 'ref') {
-              ret += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(componentName)}`
+              refs += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(componentName)}`
             } else {
               ret += `\n    ${getComponentName(componentName)}.${name.name} = ${parseValue(value)}`
             }
@@ -62,9 +62,10 @@ module.exports = function () {
         attributes.forEach(({ name, value }) => {
           ret += `\n    ${getComponentName(rootTag.name)}.${name.name} = ${parseValue(value)}`
         })
-        ret += `\n   return ${getComponentName(currentClassName)}`
+        ret += `\n   const ${getComponentName(currentClassName)} = root.assign(new ${currentClassName}())
+        ${refs}
+        return ${getComponentName(currentClassName)}`
         console.log(currentClassName, ret)
-        // path.replaceWithSourceString(ret);
         path.replaceWithSourceString(`function () {
           ${ret}
         }()`);
