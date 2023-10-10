@@ -1,3 +1,12 @@
+// const fs = require('fs')
+// const content = fs.readFileSync('./package.json', 'utf8')
+// console.log(content)
+const noRenderList = ['ButtonComp'];
+
+function isNoRender(name) {
+  return noRenderList.includes(name);
+}
+
 function camelCase(str) {
   return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
     return index === 0 ? word.toLowerCase() : word.toUpperCase();
@@ -64,7 +73,10 @@ module.exports = function () {
         function parseJSX(tagName, children, attributes, parent) {
           // console.log('parseJSX', tagName)
           const componentName = tagName.name
-          ret += `\n    const ${getComponentName(componentName)} = ${componentName}.create()`
+          if (isNoRender(componentName))
+            ret += `\n    const ${getComponentName(componentName)} = ${getComponentName(parent.name)}.addComponent(new (${componentName}))`
+          else
+            ret += `\n    const ${getComponentName(componentName)} = ${componentName}.create()`
           attributes.forEach(({ name, value }) => {
             const attName = name.name
             if (attName === '$ref') {
@@ -76,7 +88,7 @@ module.exports = function () {
               ret += parseAttribute(value, componentName, attName)
             }
           })
-          if (parent)
+          if (parent && !isNoRender(componentName))
             ret += `\n     ${getComponentName(parent.name)}.node.addChild(${getComponentName(componentName)}.node)`
           children.forEach(element => {
             const { openingElement, children, type } = element
