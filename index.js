@@ -59,32 +59,33 @@ module.exports = function () {
       JSXElement(path) {
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
-        let ret = `    const ${getComponentName(rootTag.name)} = ${rootTag.name}.create()`
+        let ret = ''
         let refs = '';
-        children.forEach(element => {
-          const { openingElement, children, type } = element
-          if (type !== 'JSXElement') return;
-          const { attributes, name } = openingElement
-          const componentName = name.name
-          const entity = getEntityName(componentName)
-          // ret += `\n    const ${entity} = world.entities.create()`
+        function parseJSX(tagName, children, attributes, parent) {
+          // console.log('parseJSX', tagName)
+          const componentName = tagName.name
           ret += `\n    const ${getComponentName(componentName)} = ${componentName}.create()`
           attributes.forEach(({ name, value }) => {
-            if (name.name === 'ref') {
+            const attName = name.name
+            if (attName === '$ref') {
               refs += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(componentName)}`
+            } else if (attName.includes('$')) {
+              const cbName = attName.replace('$', '')
+              refs += `\n    ${getComponentName(componentName)}.${cbName} = ${getComponentName(currentClassName)}.${value.value}`
             } else {
-              ret += parseAttribute(value, componentName, name.name)
+              ret += parseAttribute(value, componentName, attName)
             }
           })
-          ret += `\n     ${getComponentName(rootTag.name)}.addChild(${getComponentName(componentName)}.node)`
-        });
-        attributes.forEach(({ name, value }) => {
-          if (name.name === 'ref') {
-            refs += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(rootTag.name)}`
-          } else {
-            ret += parseAttribute(value, rootTag.name, name.name)
-          }
-        })
+          if (parent)
+            ret += `\n     ${getComponentName(parent.name)}.node.addChild(${getComponentName(componentName)}.node)`
+          children.forEach(element => {
+            const { openingElement, children, type } = element
+            if (type !== 'JSXElement') return;
+            const { attributes, name } = openingElement
+            parseJSX(name, children, attributes, tagName)
+          })
+        }
+        parseJSX(rootTag, children, attributes)
         ret += `\n   const ${getComponentName(currentClassName)} = ${getComponentName(rootTag.name)}.addComponent(new ${currentClassName}())
         ${refs}
         return ${getComponentName(currentClassName)}`
