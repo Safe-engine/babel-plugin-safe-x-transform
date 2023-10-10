@@ -12,9 +12,11 @@ function camelCase(str) {
     return index === 0 ? word.toLowerCase() : word.toUpperCase();
   }).replace(/\s+/g, '');
 }
-
+const nameCount = {}
 function getComponentName(name) {
-  return `${camelCase(name)}Comp`
+  if (!nameCount[name])
+    nameCount[name] = 0
+  return `${camelCase(name)}Comp${++nameCount[name]}`
 }
 let index = 0
 function getEntityName(name) {
@@ -47,14 +49,14 @@ function parseExpression(expression) {
   }
 }
 
-function parseAttribute(value, componentName, prop) {
+function parseAttribute(value, componentVar, prop) {
   if (value.type === 'JSXExpressionContainer' && value.expression.type === 'ObjectExpression') {
     const { properties } = value.expression
     return properties.map(p => {
-      return `\n    ${getComponentName(componentName)}.${prop}.${p.key.name} = ${parseExpression(p.value)}`
+      return `\n    ${componentVar}.${prop}.${p.key.name} = ${parseExpression(p.value)}`
     }).join('')
   }
-  return `\n    ${getComponentName(componentName)}.${prop} = ${parseValue(value)}`
+  return `\n    ${componentVar}.${prop} = ${parseValue(value)}`
 }
 
 let currentClassName;
@@ -70,37 +72,40 @@ module.exports = function () {
         const { attributes, name: rootTag } = openingElement
         let ret = ''
         let refs = '';
-        function parseJSX(tagName, children, attributes, parent) {
+        const classVar = getComponentName(currentClassName)
+        function parseJSX(tagName, children, attributes, parentVar) {
           // console.log('parseJSX', tagName)
           const componentName = tagName.name
+          const compVar = getComponentName(componentName)
+          if (!parentVar) {
+            refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
+          }
           if (isNoRender(componentName))
-            ret += `\n    const ${getComponentName(componentName)} = ${getComponentName(parent.name)}.addComponent(new (${componentName}))`
+            ret += `\n    const ${compVar} = ${parentVar}.addComponent(new (${componentName}))`
           else
-            ret += `\n    const ${getComponentName(componentName)} = ${componentName}.create()`
+            ret += `\n    const ${compVar} = ${componentName}.create()`
           attributes.forEach(({ name, value }) => {
             const attName = name.name
             if (attName === '$ref') {
-              refs += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(componentName)}`
+              refs += `\n    ${classVar}.${value.value} = ${compVar}`
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
-              refs += `\n    ${getComponentName(componentName)}.${cbName} = ${getComponentName(currentClassName)}.${value.value}`
+              refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
             } else {
-              ret += parseAttribute(value, componentName, attName)
+              ret += parseAttribute(value, compVar, attName)
             }
           })
-          if (parent && !isNoRender(componentName))
-            ret += `\n     ${getComponentName(parent.name)}.node.addChild(${getComponentName(componentName)}.node)`
+          if (parentVar && !isNoRender(componentName))
+            ret += `\n     ${parentVar}.node.addChild(${compVar}.node)`
           children.forEach(element => {
             const { openingElement, children, type } = element
             if (type !== 'JSXElement') return;
             const { attributes, name } = openingElement
-            parseJSX(name, children, attributes, tagName)
+            parseJSX(name, children, attributes, compVar)
           })
         }
         parseJSX(rootTag, children, attributes)
-        ret += `\n   const ${getComponentName(currentClassName)} = ${getComponentName(rootTag.name)}.addComponent(new ${currentClassName}())
-        ${refs}
-        return ${getComponentName(currentClassName)}`
+        ret += `${refs}\n    return ${classVar}`
         console.log(currentClassName, ret.length)
         path.replaceWithSourceString(`function () {
           ${ret}
