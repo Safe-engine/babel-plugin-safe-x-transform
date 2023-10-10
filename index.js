@@ -7,6 +7,10 @@ function camelCase(str) {
 function getComponentName(name) {
   return `${camelCase(name)}Comp`
 }
+let index = 0
+function getEntityName(name) {
+  return `${camelCase(name)}${index++}`
+}
 
 function parseValue(value) {
   const { type, expression } = value
@@ -27,7 +31,21 @@ function parseExpression(expression) {
       return extra.raw
     case 'MemberExpression':
       return `${object.name}.${property.name}`
+    case 'ObjectExpression':
+      const { properties } = expression
+    // console.log(expression)
+    // return `${object.name}.${property.name}`
   }
+}
+
+function parseAttribute(value, componentName, prop) {
+  if (value.type === 'JSXExpressionContainer' && value.expression.type === 'ObjectExpression') {
+    const { properties } = value.expression
+    return properties.map(p => {
+      return `\n    ${getComponentName(componentName)}.${prop}.${p.key.name} = ${parseExpression(p.value)}`
+    }).join('')
+  }
+  return `\n    ${getComponentName(componentName)}.${prop} = ${parseValue(value)}`
 }
 
 let currentClassName;
@@ -41,31 +59,36 @@ module.exports = function () {
       JSXElement(path) {
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
-        let ret = `    const world = GameWorld.Instance
-          const root = world.entities.create()`
+        let ret = `    const ${getComponentName(rootTag.name)} = ${rootTag.name}.create()`
         let refs = '';
         children.forEach(element => {
           const { openingElement, children, type } = element
           if (type !== 'JSXElement') return;
           const { attributes, name } = openingElement
           const componentName = name.name
-          ret += `\n    const ${getComponentName(componentName)} = root.assign(new ${componentName}())`
+          const entity = getEntityName(componentName)
+          // ret += `\n    const ${entity} = world.entities.create()`
+          ret += `\n    const ${getComponentName(componentName)} = ${componentName}.create()`
           attributes.forEach(({ name, value }) => {
             if (name.name === 'ref') {
               refs += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(componentName)}`
             } else {
-              ret += `\n    ${getComponentName(componentName)}.${name.name} = ${parseValue(value)}`
+              ret += parseAttribute(value, componentName, name.name)
             }
           })
+          ret += `\n     ${getComponentName(rootTag.name)}.addChild(${getComponentName(componentName)}.node)`
         });
-        ret += `\n    const ${getComponentName(rootTag.name)} = root.getComponent(${rootTag.name})`
         attributes.forEach(({ name, value }) => {
-          ret += `\n    ${getComponentName(rootTag.name)}.${name.name} = ${parseValue(value)}`
+          if (name.name === 'ref') {
+            refs += `\n    ${getComponentName(currentClassName)}.${value.value} = ${getComponentName(rootTag.name)}`
+          } else {
+            ret += parseAttribute(value, rootTag.name, name.name)
+          }
         })
-        ret += `\n   const ${getComponentName(currentClassName)} = root.assign(new ${currentClassName}())
+        ret += `\n   const ${getComponentName(currentClassName)} = ${getComponentName(rootTag.name)}.addComponent(new ${currentClassName}())
         ${refs}
         return ${getComponentName(currentClassName)}`
-        console.log(currentClassName, ret)
+        console.log(currentClassName, ret.length)
         path.replaceWithSourceString(`function () {
           ${ret}
         }()`);
