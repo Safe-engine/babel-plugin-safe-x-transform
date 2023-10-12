@@ -1,7 +1,10 @@
 // const fs = require('fs')
 // const content = fs.readFileSync('./package.json', 'utf8')
 // console.log(content)
-const noRenderList = ['ButtonComp'];
+const noRenderList = [
+  'ButtonComp', 'RigidBody', 'Collider',
+  'BoxCollider', 'CircleCollider', 'PolygonCollider'
+];
 
 function isNoRender(name) {
   return noRenderList.includes(name);
@@ -32,6 +35,9 @@ function parseValue(value) {
     case 'StringLiteral': {
       return value.extra.raw
     }
+    case 'NumericLiteral': {
+      return value.value
+    }
   }
 }
 
@@ -42,6 +48,9 @@ function parseExpression(expression) {
       return extra.raw
     case 'MemberExpression':
       return `${object.name}.${property.name}`
+    case 'CallExpression':
+      const { callee, arguments } = expression
+      return `${callee.name}(${arguments.map(parseValue).join(', ')})`
     case 'ObjectExpression':
       const { properties } = expression
     // console.log(expression)
