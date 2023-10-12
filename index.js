@@ -1,10 +1,12 @@
 // const fs = require('fs')
 // const content = fs.readFileSync('./package.json', 'utf8')
 // console.log(content)
+const physicsCompList = ['BoxCollider', 'CircleCollider', 'PolygonCollider']
 const noRenderList = [
+  ...physicsCompList,
   'ButtonComp', 'RigidBody', 'Collider',
-  'BoxCollider', 'CircleCollider', 'PolygonCollider'
 ];
+
 
 function isNoRender(name) {
   return noRenderList.includes(name);
@@ -89,21 +91,32 @@ module.exports = function () {
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
           }
-          if (isNoRender(componentName))
-            ret += `\n    const ${compVar} = ${parentVar}.addComponent(new (${componentName}))`
-          else
-            ret += `\n    const ${compVar} = ${componentName}.create()`
-          attributes.forEach(({ name, value }) => {
-            const attName = name.name
-            if (attName === '$ref') {
-              refs += `\n    ${classVar}.${value.value} = ${compVar}`
-            } else if (attName.includes('$')) {
-              const cbName = attName.replace('$', '')
-              refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
-            } else {
-              ret += parseAttribute(value, compVar, attName)
+          const isPhysicsComp = physicsCompList.includes(componentName)
+          if (isNoRender(componentName)) {
+            let params = ''
+            if (isPhysicsComp) {
+              params = `{${attributes.map(({ name, value }) => {
+                const attName = name.name
+                return `${attName}: ${parseValue(value)}`
+              })}}`
             }
-          })
+            ret += `\n    const ${compVar} = ${parentVar}.addComponent(new ${componentName}(${params}))`
+          } else {
+            ret += `\n    const ${compVar} = ${componentName}.create()`
+          }
+          if (!isPhysicsComp) {
+            attributes.forEach(({ name, value }) => {
+              const attName = name.name
+              if (attName === '$ref') {
+                refs += `\n    ${classVar}.${value.value} = ${compVar}`
+              } else if (attName.includes('$')) {
+                const cbName = attName.replace('$', '')
+                refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
+              } else {
+                ret += parseAttribute(value, compVar, attName)
+              }
+            })
+          }
           if (parentVar && !isNoRender(componentName))
             ret += `\n     ${parentVar}.node.addChild(${compVar}.node)`
           children.forEach(element => {
