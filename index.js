@@ -1,12 +1,13 @@
 // const fs = require('fs')
 // const content = fs.readFileSync('./package.json', 'utf8')
 // console.log(content)
+const physicsCompList = ['BoxCollider', 'CircleCollider', 'PolygonCollider']
 const paramsFirstCompList = [
-  'BoxCollider', 'CircleCollider', 'PolygonCollider',
+  ...physicsCompList,
   'SpineSkeleton'
 ]
 const noRenderList = [
-  ...paramsFirstCompList,
+  ...physicsCompList,
   'ButtonComp', 'RigidBody', 'Collider',
 ];
 
@@ -73,6 +74,13 @@ function parseAttribute(value, componentVar, prop) {
   return `\n    ${componentVar}.${prop} = ${parseValue(value)}`
 }
 
+function attributesToParams(attributes) {
+  return `{${attributes.map(({ name, value }) => {
+    const attName = name.name
+    return `${attName}: ${parseValue(value)}`
+  })}}`
+}
+
 let currentClassName;
 module.exports = function () {
   return {
@@ -94,20 +102,17 @@ module.exports = function () {
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
           }
-          const isPhysicsComp = paramsFirstCompList.includes(componentName)
+          const isParamsFirst = paramsFirstCompList.includes(componentName)
+          let params = ''
+          if (isParamsFirst) {
+            params = attributesToParams(attributes)
+          }
           if (isNoRender(componentName)) {
-            let params = ''
-            if (isPhysicsComp) {
-              params = `{${attributes.map(({ name, value }) => {
-                const attName = name.name
-                return `${attName}: ${parseValue(value)}`
-              })}}`
-            }
             ret += `\n    const ${compVar} = ${parentVar}.addComponent(new ${componentName}(${params}))`
           } else {
-            ret += `\n    const ${compVar} = ${componentName}.create()`
+            ret += `\n    const ${compVar} = ${componentName}.create(${params})`
           }
-          if (!isPhysicsComp) {
+          if (!isParamsFirst) {
             attributes.forEach(({ name, value }) => {
               const attName = name.name
               if (attName === '$ref') {
