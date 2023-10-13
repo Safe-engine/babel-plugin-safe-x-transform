@@ -48,8 +48,11 @@ function parseValue(value) {
 }
 
 function parseExpression(expression) {
-  const { type, extra, object, property } = expression
+  const { type, extra, object, property, value } = expression
   switch (type) {
+    case 'BooleanLiteral':
+      return value
+    case 'StringLiteral':
     case 'NumericLiteral':
       return extra.raw
     case 'MemberExpression':
@@ -75,10 +78,13 @@ function parseAttribute(value, componentVar, prop) {
 }
 
 function attributesToParams(attributes) {
-  return `{${attributes.map(({ name, value }) => {
+  let props = ''
+  attributes.map(({ name, value }) => {
     const attName = name.name
-    return `${attName}: ${parseValue(value)}`
-  })}}`
+    if (attName === 'node') return
+    props += `${attName}: ${parseValue(value)},`
+  })
+  return `{${props}}`
 }
 
 let currentClassName;
@@ -121,6 +127,13 @@ module.exports = function () {
                 const cbName = attName.replace('$', '')
                 refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
               } else {
+                ret += parseAttribute(value, compVar, attName)
+              }
+            })
+          } else {
+            attributes.forEach(({ name, value }) => {
+              const attName = name.name
+              if (attName === 'node') {
                 ret += parseAttribute(value, compVar, attName)
               }
             })
