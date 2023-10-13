@@ -1,9 +1,12 @@
 // const fs = require('fs')
 // const content = fs.readFileSync('./package.json', 'utf8')
 // console.log(content)
-const physicsCompList = ['BoxCollider', 'CircleCollider', 'PolygonCollider']
+const paramsFirstCompList = [
+  'BoxCollider', 'CircleCollider', 'PolygonCollider',
+  'SpineSkeleton'
+]
 const noRenderList = [
-  ...physicsCompList,
+  ...paramsFirstCompList,
   'ButtonComp', 'RigidBody', 'Collider',
 ];
 
@@ -91,7 +94,7 @@ module.exports = function () {
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
           }
-          const isPhysicsComp = physicsCompList.includes(componentName)
+          const isPhysicsComp = paramsFirstCompList.includes(componentName)
           if (isNoRender(componentName)) {
             let params = ''
             if (isPhysicsComp) {
