@@ -11,7 +11,6 @@ const noRenderList = [
   'ButtonComp', 'RigidBody', 'Collider',
 ];
 
-
 function isNoRender(name) {
   return noRenderList.includes(name);
 }
@@ -26,10 +25,6 @@ function getComponentName(name) {
   if (!nameCount[name])
     nameCount[name] = 0
   return `${camelCase(name)}Comp${++nameCount[name]}`
-}
-let index = 0
-function getEntityName(name) {
-  return `${camelCase(name)}${index++}`
 }
 
 function parseValue(value) {
@@ -60,10 +55,6 @@ function parseExpression(expression) {
     case 'CallExpression':
       const { callee, arguments } = expression
       return `${callee.name}(${arguments.map(parseValue).join(', ')})`
-    case 'ObjectExpression':
-      const { properties } = expression
-    // console.log(expression)
-    // return `${object.name}.${property.name}`
   }
 }
 
@@ -81,7 +72,7 @@ function attributesToParams(attributes) {
   let props = ''
   attributes.map(({ name, value }) => {
     const attName = name.name
-    if (attName === 'node') return
+    if (attName === 'node' || attName.includes('$')) return
     props += `${attName}: ${parseValue(value)},`
   })
   return `{${props}}`
@@ -90,6 +81,10 @@ function attributesToParams(attributes) {
 let currentClassName;
 module.exports = function () {
   return {
+    // inherits: require("@babel/plugin-syntax-jsx"),
+    pre(state) {
+      this.cache = new Map();
+    },
     visitor: {
       ClassDeclaration(path) {
         // console.log(path.node)
@@ -118,26 +113,17 @@ module.exports = function () {
           } else {
             ret += `\n    const ${compVar} = ${componentName}.create(${params})`
           }
-          if (!isParamsFirst) {
-            attributes.forEach(({ name, value }) => {
-              const attName = name.name
-              if (attName === '$ref') {
-                refs += `\n    ${classVar}.${value.value} = ${compVar}`
-              } else if (attName.includes('$')) {
-                const cbName = attName.replace('$', '')
-                refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
-              } else {
-                ret += parseAttribute(value, compVar, attName)
-              }
-            })
-          } else {
-            attributes.forEach(({ name, value }) => {
-              const attName = name.name
-              if (attName === 'node') {
-                ret += parseAttribute(value, compVar, attName)
-              }
-            })
-          }
+          attributes.forEach(({ name, value }) => {
+            const attName = name.name
+            if (attName === '$ref') {
+              refs += `\n    ${classVar}.${value.value} = ${compVar}`
+            } else if (attName.includes('$')) {
+              const cbName = attName.replace('$', '')
+              refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
+            } else if (!isParamsFirst || attName === 'node') {
+              ret += parseAttribute(value, compVar, attName)
+            }
+          })
           if (parentVar && !isNoRender(componentName))
             ret += `\n     ${parentVar}.node.addChild(${compVar}.node)`
           children.forEach(element => {
