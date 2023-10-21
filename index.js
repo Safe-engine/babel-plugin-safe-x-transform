@@ -6,14 +6,6 @@ const paramsFirstCompList = [
   ...physicsCompList,
   'SpineSkeleton'
 ]
-const noRenderList = [
-  ...physicsCompList,
-  'ButtonComp', 'RigidBody', 'Collider',
-];
-
-function isNoRender(name) {
-  return noRenderList.includes(name);
-}
 
 function camelCase(str) {
   return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
@@ -108,11 +100,7 @@ module.exports = function () {
           if (isParamsFirst) {
             params = attributesToParams(attributes)
           }
-          if (isNoRender(componentName)) {
-            ret += `\n    const ${compVar} = ${parentVar}.addComponent(new ${componentName}(${params}))`
-          } else {
-            ret += `\n    const ${compVar} = ${componentName}.create(${params})`
-          }
+          ret += `\n    const ${compVar} = ${componentName}.create(${params})`
           attributes.forEach(({ name, value }) => {
             const attName = name.name
             if (attName === '$ref') {
@@ -124,8 +112,9 @@ module.exports = function () {
               ret += parseAttribute(value, compVar, attName)
             }
           })
-          if (parentVar && !isNoRender(componentName))
-            ret += `\n     ${parentVar}.node.addChild(${compVar}.node)`
+          if (parentVar) {
+            ret += `\n     ${parentVar}.node.resolveComponent(${compVar})`
+          }
           children.forEach(element => {
             const { openingElement, children, type } = element
             if (type !== 'JSXElement') return;
