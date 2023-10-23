@@ -101,6 +101,9 @@ module.exports = function () {
             params = attributesToParams(attributes)
           }
           ret += `\n    const ${compVar} = ${componentName}.create(${params})`
+          if (parentVar) {
+            ret += `\n     ${parentVar}.node.resolveComponent(${compVar})`
+          }
           attributes.forEach(({ name, value }) => {
             const attName = name.name
             if (attName === '$ref') {
@@ -112,9 +115,6 @@ module.exports = function () {
               ret += parseAttribute(value, compVar, attName)
             }
           })
-          if (parentVar) {
-            ret += `\n     ${parentVar}.node.resolveComponent(${compVar})`
-          }
           children.forEach(element => {
             const { openingElement, children, type } = element
             if (type !== 'JSXElement') return;
