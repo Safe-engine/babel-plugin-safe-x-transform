@@ -1,11 +1,6 @@
 // const fs = require('fs')
 // const content = fs.readFileSync('./package.json', 'utf8')
 // console.log(content)
-const physicsCompList = ['BoxCollider', 'CircleCollider', 'PolygonCollider']
-const paramsFirstCompList = [
-  ...physicsCompList,
-  'SpineSkeleton'
-]
 
 function camelCase(str) {
   return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
@@ -95,11 +90,7 @@ module.exports = function () {
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
           }
-          const isParamsFirst = paramsFirstCompList.includes(componentName)
-          let params = ''
-          if (isParamsFirst) {
-            params = attributesToParams(attributes)
-          }
+          const params = attributesToParams(attributes)
           ret += `\n    const ${compVar} = ${componentName}.create(${params})`
           if (parentVar) {
             ret += `\n     ${parentVar}.node.resolveComponent(${compVar})`
@@ -111,7 +102,7 @@ module.exports = function () {
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
               refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
-            } else if (!isParamsFirst || attName === 'node') {
+            } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
             }
           })
