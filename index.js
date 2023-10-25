@@ -66,26 +66,45 @@ function attributesToParams(attributes) {
 }
 
 let currentClassName;
-module.exports = function () {
+module.exports = function ({ types: t }) {
   return {
     // inherits: require("@babel/plugin-syntax-jsx"),
     pre(state) {
       this.cache = new Map();
     },
     visitor: {
+      ImportDeclaration(path) {
+        // console.log(path.node)
+        if (path.node.source.value.includes('safex')) {
+          const identifier = t.identifier('registerSystem');
+          path.pushContainer('specifiers', identifier);
+        }
+      },
+      ExportDeclaration(path) {
+        // console.log(path.node)
+        if (path.node.declaration && path.node.declaration.id)
+          currentClassName = path.node.declaration.id.name
+      },
       ClassDeclaration(path) {
-        // console.log(path.node.id.name)
-        currentClassName = path.node.id.name
+        // console.log(path.node.id)
+        if (!currentClassName)
+          currentClassName = path.node.id.name
       },
       JSXElement(path) {
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = ''
         let refs = '';
+        let begin = `registerSystem(${currentClassName});`;
+        const registered = []
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes, parentVar) {
           const componentName = tagName.name
           // console.log('parseJSX', componentName)
+          if (!registered.includes(componentName)) {
+            begin += `registerSystem(${componentName});`
+            registered.push(componentName)
+          }
           const compVar = getComponentName(componentName)
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
@@ -117,6 +136,7 @@ module.exports = function () {
         ret += `${refs}\n    return ${classVar}`
         console.log(currentClassName, ret.length)
         path.replaceWithSourceString(`function () {
+          ${begin}
           ${ret}
         }()`);
       }
