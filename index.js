@@ -66,6 +66,7 @@ function attributesToParams(attributes) {
 }
 
 let currentClassName;
+let hasStart = false;
 module.exports = function ({ types: t }) {
   return {
     // inherits: require("@babel/plugin-syntax-jsx"),
@@ -81,14 +82,20 @@ module.exports = function ({ types: t }) {
         }
       },
       ExportDeclaration(path) {
-        // console.log(path.node)
         if (path.node.declaration && path.node.declaration.id)
           currentClassName = path.node.declaration.id.name
       },
       ClassDeclaration(path) {
-        // console.log(path.node.id)
+        // console.log(path.node.body.body)
+        hasStart = false;
         if (!currentClassName)
           currentClassName = path.node.id.name
+      },
+      ClassMethod(path) {
+        // console.log(path.node.key.name)
+        if ('start' === path.node.key.name) {
+          hasStart = true
+        }
       },
       JSXElement(path) {
         const { openingElement, children } = path.node
@@ -133,6 +140,9 @@ module.exports = function ({ types: t }) {
           })
         }
         parseJSX(rootTag, children, attributes)
+        if (hasStart) {
+          refs += `\n${classVar}.start();`
+        }
         ret += `${refs}\n    return ${classVar}`
         console.log(currentClassName, ret.length)
         path.replaceWithSourceString(`function () {
