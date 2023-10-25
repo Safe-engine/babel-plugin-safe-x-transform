@@ -8,7 +8,7 @@ function camelCase(str) {
   }).replace(/\s+/g, '');
 }
 const nameCount = {}
-function getComponentName(name) {
+function getComponentName(name = '') {
   if (!nameCount[name])
     nameCount[name] = 0
   return `${camelCase(name)}Comp${++nameCount[name]}`
@@ -74,7 +74,7 @@ module.exports = function () {
     },
     visitor: {
       ClassDeclaration(path) {
-        // console.log(path.node)
+        // console.log(path.node.id.name)
         currentClassName = path.node.id.name
       },
       JSXElement(path) {
@@ -84,8 +84,8 @@ module.exports = function () {
         let refs = '';
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes, parentVar) {
-          // console.log('parseJSX', tagName)
           const componentName = tagName.name
+          // console.log('parseJSX', componentName)
           const compVar = getComponentName(componentName)
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
