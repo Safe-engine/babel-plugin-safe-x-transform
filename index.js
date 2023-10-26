@@ -26,6 +26,8 @@ function parseValue(value) {
     case 'NumericLiteral': {
       return value.value
     }
+    default:
+      console.log('not support', type)
   }
 }
 
@@ -42,6 +44,11 @@ function parseExpression(expression) {
     case 'CallExpression':
       const { callee, arguments } = expression
       return `${callee.name}(${arguments.map(parseValue).join(', ')})`
+    case 'UnaryExpression':
+      const { operator, argument } = expression
+      return `${operator}${parseValue(argument)}`;
+    default:
+      console.log('not support parseExpression', type)
   }
 }
 
