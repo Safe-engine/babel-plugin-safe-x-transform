@@ -89,6 +89,7 @@ module.exports = function ({ types: t }) {
         }
       },
       ExportDeclaration(path) {
+        hasStart = false;
         if (path.node.declaration && path.node.declaration.id)
           currentClassName = path.node.declaration.id.name
       },
