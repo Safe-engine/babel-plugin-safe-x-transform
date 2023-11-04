@@ -135,7 +135,10 @@ module.exports = function ({ types: t }) {
               refs += `\n    ${classVar}.${value.value} = ${compVar}`
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
-              refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}`
+              if (attName === '$node')
+                refs += `\n    ${classVar}.${value.value} = ${compVar}.${cbName};`
+              else
+                refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value};`
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
             }
