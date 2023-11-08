@@ -74,18 +74,26 @@ function attributesToParams(attributes) {
 
 let currentClassName;
 let hasStart = false;
+let register = ''
 module.exports = function ({ types: t }) {
   return {
     // inherits: require("@babel/plugin-syntax-jsx"),
     pre(state) {
-      this.cache = new Map();
+      register = ''
     },
     visitor: {
       ImportDeclaration(path) {
         // console.log(path.node)
-        if (path.node.source.value.includes('safex')) {
+        const { specifiers, source } = path.node
+        if (source.value.includes('safex')) {
           const identifier = t.identifier('registerSystem');
           path.pushContainer('specifiers', identifier);
+        }
+        if (source.value.includes('component')) {
+          specifiers.forEach(sp => {
+            const componentName = sp.local.name
+            register += `registerSystem(${componentName});`
+          })
         }
       },
       ExportDeclaration(path) {
@@ -110,16 +118,11 @@ module.exports = function ({ types: t }) {
         const { attributes, name: rootTag } = openingElement
         let ret = ''
         let refs = '';
-        let begin = `registerSystem(${currentClassName});`;
-        const registered = []
+        let begin = `${register}registerSystem(${currentClassName});`;
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes, parentVar) {
           const componentName = tagName.name
           // console.log('parseJSX', componentName)
-          if (!registered.includes(componentName)) {
-            begin += `registerSystem(${componentName});`
-            registered.push(componentName)
-          }
           const compVar = getComponentName(componentName)
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
