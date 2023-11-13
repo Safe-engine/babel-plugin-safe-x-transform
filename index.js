@@ -135,13 +135,24 @@ module.exports = function ({ types: t }) {
           attributes.forEach(({ name, value }) => {
             const attName = name.name
             if (attName === '$ref') {
-              refs += `\n    ${classVar}.${value.value} = ${compVar}`
+              const refString = value.value
+              console.log(refString);
+              if (refString.includes(':')) {
+                const [refVal, compName] = refString.split(':')
+                refs += `\n    ${classVar}.${refVal} = ${compVar}.getComponent(${compName})`
+              } else {
+                refs += `\n    ${classVar}.${refString} = ${compVar}`
+              }
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
-              if (attName === '$node')
+              if (attName === '$node') {
                 refs += `\n    ${classVar}.${value.value} = ${compVar}.${cbName};`
-              else
+              } else if (value.value.includes('.')) {
+                const [refVal] = value.value.split('.')
+                refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}.bind(${classVar}.${refVal});`
+              } else {
                 refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value};`
+              }
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
             }
