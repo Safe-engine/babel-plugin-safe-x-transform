@@ -2,6 +2,9 @@
 // const content = fs.readFileSync('./package.json', 'utf8')
 // console.log(content)
 
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
 function camelCase(str) {
   return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
     return index === 0 ? word.toLowerCase() : word.toUpperCase();
@@ -136,7 +139,7 @@ module.exports = function ({ types: t }) {
             const attName = name.name
             if (attName === '$ref') {
               const refString = value.value
-              console.log(refString);
+              // console.log(refString);
               if (refString.includes(':')) {
                 const [refVal, compName] = refString.split(':')
                 refs += `\n    ${classVar}.${refVal} = ${compVar}.getComponent(${compName})`
@@ -147,11 +150,13 @@ module.exports = function ({ types: t }) {
               const cbName = attName.replace('$', '')
               if (attName === '$node') {
                 refs += `\n    ${classVar}.${value.value} = ${compVar}.${cbName};`
-              } else if (value.value.includes('.')) {
-                const [refVal] = value.value.split('.')
-                refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value}.bind(${classVar}.${refVal});`
               } else {
-                refs += `\n    ${compVar}.${cbName} = ${classVar}.${value.value};`
+                if (value.value.includes('.')) {
+                  const [refVal] = value.value.split('.')
+                  refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${classVar}.${refVal}));`
+                } else {
+                  refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value});`
+                }
               }
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
