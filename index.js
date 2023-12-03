@@ -35,8 +35,10 @@ function parseValue(value) {
 }
 
 function parseExpression(expression) {
-  const { type, extra, object, property, value } = expression
+  const { type, extra, object, property, value, name } = expression
   switch (type) {
+    case 'Identifier':
+      return name
     case 'BooleanLiteral':
       return value
     case 'StringLiteral':
@@ -69,7 +71,7 @@ function attributesToParams(attributes) {
   let props = ''
   attributes.map(({ name, value }) => {
     const attName = name.name
-    if (attName === 'node' || attName.includes('$')) return
+    if (attName === 'node' || attName.includes('$')) return;
     props += `${attName}: ${parseValue(value)},`
   })
   return `{${props}}`
