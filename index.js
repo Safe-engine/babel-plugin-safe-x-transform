@@ -157,7 +157,7 @@ module.exports = function ({ types: t }) {
                   const [refVal] = value.value.split('.')
                   refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${classVar}.${refVal}));`
                 } else {
-                  refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value});`
+                  refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${classVar}));`
                 }
               }
             } else if (attName === 'node') {
@@ -176,7 +176,7 @@ module.exports = function ({ types: t }) {
           refs += `\n${classVar}.start();`
         }
         ret += `${refs}\n    return ${classVar}`
-        console.log(currentClassName, ret.length)
+        // console.log(currentClassName, ret.length)
         path.replaceWithSourceString(`function () {
           ${begin}
           ${ret}
