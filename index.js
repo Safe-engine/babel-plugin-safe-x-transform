@@ -1,6 +1,4 @@
-// const fs = require('fs')
-// const content = fs.readFileSync('./package.json', 'utf8')
-// console.log(content)
+const collideEvents = ['onCollisionEnter', 'onCollisionExit', 'onCollisionStay']
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -144,20 +142,26 @@ module.exports = function ({ types: t }) {
               // console.log(refString);
               if (refString.includes(':')) {
                 const [refVal, compName] = refString.split(':')
-                refs += `\n    ${classVar}.${refVal} = ${compVar}.getComponent(${compName})`
+                refs += `\n${classVar}.${refVal} = ${compVar}.getComponent(${compName});`
               } else {
-                refs += `\n    ${classVar}.${refString} = ${compVar}`
+                refs += `\n${classVar}.${refString} = ${compVar};`
               }
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
               if (attName === '$node') {
-                refs += `\n    ${classVar}.${value.value} = ${compVar}.${cbName};`
+                refs += `\n${classVar}.${value.value} = ${compVar}.${cbName};`
               } else {
+                let bindVal
                 if (value.value.includes('.')) {
                   const [refVal] = value.value.split('.')
-                  refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${classVar}.${refVal}));`
+                  bindVal = `${classVar}.${refVal}`
                 } else {
-                  refs += `\n    ${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${classVar}));`
+                  bindVal = `${classVar}`
+                }
+                if (collideEvents.includes(cbName)) {
+                  refs += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
+                } else {
+                  refs += `\n${compVar}.${(cbName)}=${classVar}.${value.value}.bind(${bindVal});`
                 }
               }
             } else if (attName === 'node') {
@@ -181,6 +185,8 @@ module.exports = function ({ types: t }) {
           ${begin}
           ${ret}
         }()`);
+        // console.log(path.node)
+        path.parentPath.parentPath.replaceWith(path.node.callee.body)
       }
     },
   }
