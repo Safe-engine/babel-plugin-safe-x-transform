@@ -138,31 +138,38 @@ module.exports = function ({ types: t }) {
           attributes.forEach(({ name, value }) => {
             const attName = name.name
             if (attName === '$ref') {
-              const refString = value.value
+              let refString = value.value
+              const isPushList = refString.endsWith('[]')
               // console.log(refString);
+              if (isPushList) {
+                refString = refString.replace('[]', '')
+              }
+              let leftVar = `${classVar}.${refString}`
+              let rightValue = `${compVar}`
               if (refString.includes(':')) {
                 const [refVal, compName] = refString.split(':')
-                refs += `\n${classVar}.${refVal} = ${compVar}.getComponent(${compName});`
-              } else {
-                refs += `\n${classVar}.${refString} = ${compVar};`
+                rightValue = `${compVar}.getComponent(${compName})`
+                leftVar = `${classVar}.${refVal}`
               }
+              if (isPushList)
+                refs += `\n${leftVar}.push(${rightValue});`
+              else
+                refs += `\n${leftVar} = ${rightValue};`
+            } else if (attName === '$node') {
+              refs += `\n${classVar}.${value.value} = ${compVar}.${cbName};`
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
-              if (attName === '$node') {
-                refs += `\n${classVar}.${value.value} = ${compVar}.${cbName};`
+              let bindVal
+              if (value.value.includes('.')) {
+                const [refVal] = value.value.split('.')
+                bindVal = `${classVar}.${refVal}`
               } else {
-                let bindVal
-                if (value.value.includes('.')) {
-                  const [refVal] = value.value.split('.')
-                  bindVal = `${classVar}.${refVal}`
-                } else {
-                  bindVal = `${classVar}`
-                }
-                if (collideEvents.includes(cbName)) {
-                  refs += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
-                } else {
-                  refs += `\n${compVar}.${(cbName)}=${classVar}.${value.value}.bind(${bindVal});`
-                }
+                bindVal = `${classVar}`
+              }
+              if (collideEvents.includes(cbName)) {
+                refs += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
+              } else {
+                refs += `\n${compVar}.${(cbName)}=${classVar}.${value.value}.bind(${bindVal});`
               }
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
