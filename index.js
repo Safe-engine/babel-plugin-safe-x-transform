@@ -123,9 +123,16 @@ module.exports = function ({ types: t }) {
         let refs = '';
         let begin = `${register}registerSystem(${currentClassName});`;
         const classVar = getComponentName(currentClassName)
-        function parseJSX(tagName, children, attributes, parentVar) {
+        function parseJSX(tagName, children, attributes = [], parentVar) {
           const componentName = tagName.name
           // console.log('parseJSX', componentName)
+          if (componentName === 'ExtraDataComp') {
+            // console.log(parentVar, attributes[1])
+            const key = attributes.find(({ name }) => name.name === 'key').value.value
+            const value = attributes.find(({ name }) => name.name === 'value').value.expression.value
+            ret += `\n     ${parentVar}.node.setData('${key}', ${value})`
+            return
+          }
           const compVar = getComponentName(componentName)
           if (!parentVar) {
             refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
