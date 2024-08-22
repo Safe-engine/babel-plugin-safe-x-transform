@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-safe-x-transform",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Compile ES2015 safe-engine-x to ES5",
   "repository": {
     "type": "git",

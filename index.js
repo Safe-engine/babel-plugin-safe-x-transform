@@ -16,6 +16,7 @@ function getComponentName(name = '') {
 }
 
 function parseValue(value) {
+  if(!value) return true
   const { type, expression } = value
   switch (type) {
     case 'JSXExpressionContainer': {
@@ -88,7 +89,7 @@ module.exports = function ({ types: t }) {
       ImportDeclaration(path) {
         // console.log(path.node)
         const { specifiers, source } = path.node
-        if (source.value.includes('safex')) {
+        if (source.value.startsWith('safex')) {
           const identifier = t.identifier('registerSystem');
           path.pushContainer('specifiers', identifier);
         }
