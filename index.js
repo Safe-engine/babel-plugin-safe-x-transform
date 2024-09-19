@@ -89,7 +89,7 @@ module.exports = function ({ types: t }) {
       ImportDeclaration(path) {
         // console.log(path.node)
         const { specifiers, source } = path.node
-        if (source.value === '@safe-engine/pixi') {
+        if (source.value === '@safe-engine/core') {
           const identifier = t.identifier('registerSystem');
           path.pushContainer('specifiers', identifier);
         }
