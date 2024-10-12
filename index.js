@@ -78,6 +78,7 @@ function attributesToParams(attributes) {
 
 let currentClassName;
 let hasStart = false;
+let notImported = false;
 let register = ''
 module.exports = function ({ types: t }) {
   return {
@@ -116,8 +117,22 @@ module.exports = function ({ types: t }) {
         if ('start' === path.node.key.name) {
           hasStart = true
         }
+        if ('create' === path.node.key.name) {
+          const staticProperty = t.classProperty(
+            t.identifier('hasRender'),    // Tên thuộc tính
+            t.booleanLiteral(true),       // Giá trị thuộc tính: true
+            null,                         // Không cần kiểu tường minh
+            null,                         // Không có decorators
+            false,                         // computed
+            true                          // Static là true
+          );
+          // Thêm thuộc tính static vào class
+          // console.log(path.parentPath.node)
+          path.parentPath.node.body.unshift(staticProperty);
+        }
       },
       JSXElement(path) {
+        notImported = true;
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = ''
@@ -202,6 +217,21 @@ module.exports = function ({ types: t }) {
         }()`);
         // console.log(path.node)
         path.parentPath.parentPath.replaceWith(path.node.callee.body)
+      },
+      Program(path) {
+        // Chèn câu lệnh import vào đầu chương trình (nếu chưa có)
+        const existingImports = path.node.body.filter(statement =>
+          t.isImportDeclaration(statement) && statement.source.value === '@safe-engine/core'
+        );
+        if (existingImports.length === 0) {
+          if (notImported) {
+            const importDeclaration = t.importDeclaration(
+              [t.importSpecifier(t.identifier('registerSystem'), t.identifier('registerSystem'))],
+              t.stringLiteral('@safe-engine/core')
+            );
+            path.unshiftContainer('body', importDeclaration);
+          }
+        }
       }
     },
   }
