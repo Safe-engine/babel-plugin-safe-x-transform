@@ -90,14 +90,13 @@ module.exports = function ({ types: t }) {
       ImportDeclaration(path) {
         // console.log(path.node)
         const { specifiers, source } = path.node
-        if (source.value === '@safe-engine/core') {
-          const identifier = t.identifier('registerSystem');
-          path.pushContainer('specifiers', identifier);
-        }
         if (source.value.includes('component')) {
           specifiers.forEach(sp => {
             const componentName = sp.local.name
-            register += `registerSystem(${componentName});`
+            const newReg = `window.registerSystem(${componentName});`
+            if (!register.includes(newReg)) {
+              register += newReg
+            }
           })
         }
       },
@@ -124,7 +123,7 @@ module.exports = function ({ types: t }) {
         const { attributes, name: rootTag } = openingElement
         let ret = ''
         let refs = '';
-        let begin = `${register}registerSystem(${currentClassName});`;
+        let begin = `${register}window.registerSystem(${currentClassName});`;
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes = [], parentVar) {
           const componentName = tagName.name
@@ -204,33 +203,6 @@ module.exports = function ({ types: t }) {
         }()`);
         // console.log(path.node)
         path.parentPath.parentPath.replaceWith(path.node.callee.body)
-      },
-      Program(path) {
-        // Chèn câu lệnh import vào đầu chương trình (nếu chưa có)
-        const existingImports = path.node.body.filter(statement =>
-          t.isImportDeclaration(statement) && statement.source.value === '@safe-engine/core'
-        );
-        if (hadJSX && existingImports.length === 0) {
-          const importDeclaration = t.importDeclaration(
-            [t.importSpecifier(t.identifier('registerSystem'), t.identifier('registerSystem'))],
-            t.stringLiteral('@safe-engine/core')
-          );
-          path.unshiftContainer('body', importDeclaration);
-        }
-      },
-      ClassProperty(path) {
-        if (hadJSX) {
-          const staticProperty = t.classProperty(
-            t.identifier('hasRender'),    // Tên thuộc tính
-            t.booleanLiteral(true),       // Giá trị thuộc tính: true
-            null,                         // Không cần kiểu tường minh
-            null,                         // Không có decorators
-            false,                         // computed
-            true                          // Static là true
-          );
-          // Thêm thuộc tính static vào class
-          path.parentPath.node.body.unshift(staticProperty);
-        }
       }
     },
   }
