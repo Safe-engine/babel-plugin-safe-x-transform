@@ -90,10 +90,14 @@ module.exports = function ({ types: t }) {
       ImportDeclaration(path) {
         // console.log(path.node)
         const { specifiers, source } = path.node
+        if (source.value === '@safe-engine/pixi') {
+          const identifier = t.identifier('registerSystem');
+          path.pushContainer('specifiers', identifier);
+        }
         if (source.value.includes('component')) {
           specifiers.forEach(sp => {
             const componentName = sp.local.name
-            const newReg = `window.registerSystem(${componentName});`
+            const newReg = `registerSystem(${componentName});`
             if (!register.includes(newReg)) {
               register += newReg
             }
@@ -123,7 +127,7 @@ module.exports = function ({ types: t }) {
         const { attributes, name: rootTag } = openingElement
         let ret = ''
         let refs = '';
-        let begin = `${register}window.registerSystem(${currentClassName});`;
+        let begin = `${register}registerSystem(${currentClassName});`;
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes = [], parentVar) {
           const componentName = tagName.name
