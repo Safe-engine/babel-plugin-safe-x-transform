@@ -82,7 +82,6 @@ let hadJSX = false;
 let register = ''
 module.exports = function ({ types: t }) {
   return {
-    // inherits: require("@babel/plugin-syntax-jsx"),
     pre(state) {
       register = ''
     },
@@ -90,7 +89,10 @@ module.exports = function ({ types: t }) {
       ImportDeclaration(path) {
         // console.log(path.node)
         const { specifiers, source } = path.node
-        if (source.value === '@safe-engine/pixi') {
+        if (source.value === '@safe-engine/pixi' ||
+          source.value === 'safex' ||
+          source.value === '@safex/cocos'
+        ) {
           const identifier = t.identifier('registerSystem');
           path.pushContainer('specifiers', identifier);
         }
