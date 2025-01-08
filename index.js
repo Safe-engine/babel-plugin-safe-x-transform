@@ -24,7 +24,9 @@ function parseValue(value) {
     case 'JSXExpressionContainer': {
       return parseExpression(expression)
     }
-    case 'BinaryExpression': {
+    case 'BinaryExpression':
+    case 'MemberExpression':
+    case 'CallExpression': {
       return parseExpression(value)
     }
     case 'StringLiteral': {
@@ -55,7 +57,8 @@ function parseExpression(expression) {
       return `${object.name}.${property.name}`
     case 'CallExpression': {
       const { callee, arguments: args } = expression
-      return `${callee.name}(${args.map(parseValue).join(', ')})`
+
+      return `${parseValue(callee)}(${args.map(parseValue).join(', ')})`
     }
     case 'UnaryExpression': {
       const { operator, argument: args } = expression
