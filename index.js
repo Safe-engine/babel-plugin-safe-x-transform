@@ -24,14 +24,20 @@ function parseValue(value) {
     case 'JSXExpressionContainer': {
       return parseExpression(expression)
     }
+    case 'BinaryExpression': {
+      return parseExpression(value)
+    }
     case 'StringLiteral': {
       return value.extra.raw
     }
     case 'NumericLiteral': {
       return value.value
     }
+    case 'Identifier': {
+      return value.name
+    }
     default:
-      console.log('not support', type)
+      console.log('not support', type, value)
   }
 }
 
@@ -54,6 +60,14 @@ function parseExpression(expression) {
     case 'UnaryExpression': {
       const { operator, argument: args } = expression
       return `${operator}${parseValue(args)}`
+    }
+    case 'BinaryExpression': {
+      const { operator, right, left } = expression
+      // console.log('Expression', expression)
+      if ('BinaryExpression' === right.type && (right.operator === '+' || right.operator === '-')) {
+        return `${parseValue(left)} ${operator} (${parseValue(right)})`
+      }
+      return `${parseValue(left)} ${operator} ${parseValue(right)}`
     }
     default:
       console.log('not support parseExpression', type)
@@ -80,18 +94,6 @@ function attributesToParams(attributes) {
     props += `${attName}: ${parseValue(value)},`
   })
   return `{${props}}`
-}
-
-function parseJSXExpressionContainer(element) {
-  const { expression } = element
-  const { type } = expression
-  if (type === 'JSXEmptyExpression') {
-    return
-  }
-  if (type === 'CallExpression') {
-    const { callee, arguments: args } = expression
-    console.log(callee, args)
-  }
 }
 
 let currentClassName
@@ -202,10 +204,27 @@ module.exports = function ({ types: t }) {
             }
           })
           children.forEach((element) => {
-            const { openingElement, children, type } = element
+            const { openingElement, children, type, expression } = element
             if (type !== 'JSXElement') {
               if (type === 'JSXExpressionContainer') {
-                parseJSXExpressionContainer(element)
+                // parseJSXExpressionContainer(element)
+                const { type, callee, arguments: args } = expression
+                if (type === 'CallExpression') {
+                  const callback = args[0]
+                  // console.log(callee, args)
+                  const { type, object } = callee
+                  if (type === 'MemberExpression' && object.callee.name === 'Array') {
+                    const loopCount = object.arguments[0].value
+                    // console.log('callee', loopCount, callback)
+                    const indexVar = callback.params[1].name
+                    ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopCount}; ${indexVar}++) {`
+                    const { openingElement, children } = callback.body
+                    const { attributes, name: rootTag } = openingElement
+                    // console.log('parse MemberExpression', rootTag, children, attributes)
+                    parseJSX(rootTag, children, attributes, compVar)
+                    ret += '\n }'
+                  }
+                }
               }
               return
             }
