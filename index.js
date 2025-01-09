@@ -248,10 +248,10 @@ module.exports = function ({ types: t }) {
                     }
                     ret += '\n }'
                   } else {
-                    // console.log('loopVar', object, callback.params[1])
+                    // console.log('loopVar', type, object, callback.params[1])
                     const { name, left } = callback.params[1]
                     const indexVar = name || left.name
-                    const loopVar = object.name
+                    const loopVar = parseValue(object)
                     const itemVar = callback.params[0].name
                     ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
                     ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
