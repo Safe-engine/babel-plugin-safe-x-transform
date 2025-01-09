@@ -214,9 +214,9 @@ module.exports = function ({ types: t }) {
                 const { type, callee, arguments: args } = expression
                 if (type === 'CallExpression') {
                   const callback = args[0]
-                  // console.log(callee, args)
-                  const { type, object } = callee
-                  if (type === 'MemberExpression' && object.callee.name === 'Array') {
+                  // console.log('CallExpression', callee, callback)
+                  const { object } = callee
+                  if (object.callee && object.callee.name === 'Array') {
                     // console.log('callee', loopCount, callback.params[1])
                     const { name, left, right } = callback.params[1]
                     const indexVar = name || left.name
@@ -246,6 +246,19 @@ module.exports = function ({ types: t }) {
                       // console.log('parse MemberExpression', rootTag, children, attributes)
                       parseJSX(rootTag, children, attributes, compVar)
                     }
+                    ret += '\n }'
+                  } else {
+                    // console.log('loopVar', object, callback.params[1])
+                    const { name, left } = callback.params[1]
+                    const indexVar = name || left.name
+                    const loopVar = object.name
+                    const itemVar = callback.params[0].name
+                    ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
+                    ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
+                    const { openingElement, children } = callback.body
+                    const { attributes, name: rootTag } = openingElement
+                    // console.log('parse MemberExpression', rootTag, children, attributes)
+                    parseJSX(rootTag, children, attributes, compVar)
                     ret += '\n }'
                   }
                 }
