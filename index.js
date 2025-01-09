@@ -44,7 +44,7 @@ function parseValue(value) {
 }
 
 function parseExpression(expression) {
-  const { type, extra, object, property, value, name } = expression
+  const { type, extra, object, property, value, name, computed } = expression
   switch (type) {
     case 'Identifier':
       return name
@@ -54,6 +54,7 @@ function parseExpression(expression) {
     case 'NumericLiteral':
       return extra.raw
     case 'MemberExpression':
+      if (computed) return `${object.name}[${property.name}]`
       return `${object.name}.${property.name}`
     case 'CallExpression': {
       const { callee, arguments: args } = expression
