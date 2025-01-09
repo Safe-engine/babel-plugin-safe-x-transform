@@ -161,11 +161,14 @@ module.exports = function ({ types: t }) {
             return
           }
           const compVar = getComponentName(componentName)
-          if (!parentVar) {
-            refs += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
-          }
           const params = attributesToParams(attributes)
-          ret += `\n    const ${compVar} = ${componentName}.create(${params})`
+          const createComponentString = `\n    const ${compVar} = ${componentName}.create(${params})`
+          if (!parentVar) {
+            begin += createComponentString
+            begin += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
+          } else {
+            ret += createComponentString
+          }
           if (parentVar) {
             ret += `\n     ${parentVar}.node.resolveComponent(${compVar})`
           }
@@ -199,9 +202,9 @@ module.exports = function ({ types: t }) {
                 bindVal = `${classVar}`
               }
               if (collideEvents.includes(cbName)) {
-                refs += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
+                ret += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
               } else {
-                refs += `\n${compVar}.${cbName}=${classVar}.${value.value}.bind(${bindVal});`
+                ret += `\n${compVar}.${cbName}=${classVar}.${value.value}.bind(${bindVal});`
               }
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
@@ -211,64 +214,66 @@ module.exports = function ({ types: t }) {
             const { openingElement, children, type, expression } = element
             if (type !== 'JSXElement') {
               if (type === 'JSXExpressionContainer') {
-                // parseJSXExpressionContainer(element)
-                const { type, callee, arguments: args } = expression
-                if (type === 'CallExpression') {
-                  const callback = args[0]
-                  // console.log('CallExpression', callee, callback)
-                  const { object } = callee
-                  if (object.callee && object.callee.name === 'Array') {
-                    // console.log('callee', loopCount, callback.params[1])
-                    const { name, left, right } = callback.params[1]
-                    const indexVar = name || left.name
-                    const startIndex = right.value || 0
-                    const loopCount = object.arguments[0].value + startIndex
-                    ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
-                    const { type, openingElement, children } = callback.body
-                    if (type === 'CallExpression') {
-                      // console.log('callee', loopCount, callback.body)
-                      const { callee, arguments: args } = callback.body
-                      const callback2 = args[0]
-                      const { type, object } = callee
-                      if (type === 'MemberExpression' && callee.object.callee.name === 'Array') {
-                        const { name, left, right } = callback2.params[1]
-                        const indexVar = name || left.name
-                        const startIndex = right.value || 0
-                        const loopCount = object.arguments[0].value + startIndex
-                        ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
-                        const { openingElement, children } = callback2.body
-                        const { attributes, name: rootTag } = openingElement
-                        // console.log('parse MemberExpression', rootTag, children, attributes)
-                        parseJSX(rootTag, children, attributes, compVar)
-                        ret += '\n }'
-                      }
-                    } else {
-                      const { attributes, name: rootTag } = openingElement
-                      // console.log('parse MemberExpression', rootTag, children, attributes)
-                      parseJSX(rootTag, children, attributes, compVar)
-                    }
-                    ret += '\n }'
-                  } else {
-                    // console.log('loopVar', type, object, callback.params[1])
-                    const { name, left } = callback.params[1]
-                    const indexVar = name || left.name
-                    const loopVar = parseValue(object)
-                    const itemVar = callback.params[0].name
-                    ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
-                    ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
-                    const { openingElement, children } = callback.body
-                    const { attributes, name: rootTag } = openingElement
-                    // console.log('parse MemberExpression', rootTag, children, attributes)
-                    parseJSX(rootTag, children, attributes, compVar)
-                    ret += '\n }'
-                  }
-                }
+                parseJSXExpressionContainer(expression, compVar)
               }
               return
             }
             const { attributes, name } = openingElement
             parseJSX(name, children, attributes, compVar)
           })
+        }
+        function parseJSXExpressionContainer(expression, compVar) {
+          const { type, callee, arguments: args } = expression
+          if (type === 'CallExpression') {
+            const callback = args[0]
+            // console.log('CallExpression', callee, callback)
+            const { object } = callee
+            if (object.callee && object.callee.name === 'Array') {
+              // console.log('callee', loopCount, callback.params[1])
+              const { name, left, right } = callback.params[1]
+              const indexVar = name || left.name
+              const startIndex = right.value || 0
+              const loopCount = object.arguments[0].value + startIndex
+              ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
+              const { type, openingElement, children } = callback.body
+              if (type === 'CallExpression') {
+                // console.log('callee', loopCount, callback.body)
+                const { callee, arguments: args } = callback.body
+                const callback2 = args[0]
+                const { type, object } = callee
+                if (type === 'MemberExpression' && callee.object.callee.name === 'Array') {
+                  const { name, left, right } = callback2.params[1]
+                  const indexVar = name || left.name
+                  const startIndex = right.value || 0
+                  const loopCount = object.arguments[0].value + startIndex
+                  ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
+                  const { openingElement, children } = callback2.body
+                  const { attributes, name: rootTag } = openingElement
+                  // console.log('parse MemberExpression', rootTag, children, attributes)
+                  parseJSX(rootTag, children, attributes, compVar)
+                  ret += '\n }'
+                }
+              } else {
+                const { attributes, name: rootTag } = openingElement
+                // console.log('parse MemberExpression', rootTag, children, attributes)
+                parseJSX(rootTag, children, attributes, compVar)
+              }
+              ret += '\n }'
+            } else {
+              // console.log('loopVar', type, object, callback.params[1])
+              const { name, left } = callback.params[1]
+              const indexVar = name || left.name
+              const loopVar = parseValue(object)
+              const itemVar = callback.params[0].name
+              ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
+              ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
+              const { openingElement, children } = callback.body
+              const { attributes, name: rootTag } = openingElement
+              // console.log('parse MemberExpression', rootTag, children, attributes)
+              parseJSX(rootTag, children, attributes, compVar)
+              ret += '\n }'
+            }
+          }
         }
         parseJSX(rootTag, children, attributes)
         if (hasStart) {
