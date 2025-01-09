@@ -94,12 +94,6 @@ function attributesToParams(attributes) {
   attributes.map(({ name, value }) => {
     const attName = name.name
     if (attName === 'node' || attName.includes('$')) return
-    if (attName === 'spriteFrame') {
-      // console.log('spriteFrame', value)
-      if (value.expression.name.startsWith('sf_')) {
-        props += 'texType: 1,'
-      }
-    }
     props += `${attName}: ${parseValue(value)},`
   })
   return `{${props}}`
