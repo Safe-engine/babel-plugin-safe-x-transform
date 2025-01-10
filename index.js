@@ -240,8 +240,8 @@ module.exports = function ({ types: t }) {
                 // console.log('callee', loopCount, callback.body)
                 const { callee, arguments: args } = callback.body
                 const callback2 = args[0]
-                const { type, object } = callee
-                if (type === 'MemberExpression' && callee.object.callee.name === 'Array') {
+                const { object } = callee
+                if (object.callee && object.callee.name === 'Array') {
                   const { name, left, right } = callback2.params[1]
                   const indexVar = name || left.name
                   const startIndex = right.value || 0
