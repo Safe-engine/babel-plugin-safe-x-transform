@@ -53,9 +53,12 @@ function parseExpression(expression) {
     case 'StringLiteral':
     case 'NumericLiteral':
       return extra.raw
-    case 'MemberExpression':
-      if (computed) return `${object.name}[${property.name}]`
-      return `${object.name}.${property.name}`
+    case 'MemberExpression': {
+      const left = parseValue(object)
+      const right = parseValue(property)
+      if (computed) return `${left}[${right}]`
+      return `${left}.${right}`
+    }
     case 'CallExpression': {
       const { callee, arguments: args } = expression
 
