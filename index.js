@@ -155,7 +155,7 @@ module.exports = function ({ types: t }) {
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes = [], parentVar) {
           const componentName = tagName.name
-          console.log('parseJSX', componentName)
+          // console.log('parseJSX', componentName)
           if (componentName === 'ExtraDataComp') {
             // console.log(parentVar, attributes[1])
             const key = attributes.find(({ name }) => name.name === 'key').value.value
