@@ -150,7 +150,6 @@ module.exports = function ({ types: t }) {
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = ''
-        let refs = ''
         let begin = `${register}registerSystem(${currentClassName});`
         const classVar = getComponentName(currentClassName)
         function parseJSX(tagName, children, attributes = [], parentVar) {
@@ -191,10 +190,8 @@ module.exports = function ({ types: t }) {
                 rightValue = `${compVar}.getComponent(${compName})`
                 leftVar = `${classVar}.${refVal}`
               }
-              if (isPushList) refs += `\n${leftVar}.push(${rightValue});`
-              else refs += `\n${leftVar} = ${rightValue};`
-              // } else if (attName === '$node') {
-              //   refs += `\n${classVar}.${value.value} = ${compVar}.${cbName};`
+              if (isPushList) ret += `\n${leftVar}.push(${rightValue});`
+              else ret += `\n${leftVar} = ${rightValue};`
             } else if (attName.includes('$')) {
               const cbName = attName.replace('$', '')
               let bindVal
@@ -280,9 +277,9 @@ module.exports = function ({ types: t }) {
         }
         parseJSX(rootTag, children, attributes)
         if (hasStart) {
-          refs += `\n${classVar}.start();`
+          ret += `\n${classVar}.start();`
         }
-        ret += `${refs}\n    return ${classVar}`
+        ret += `\n    return ${classVar}`
         // console.log(currentClassName, ret.length)
         path.replaceWithSourceString(`function () {
           ${begin}
