@@ -120,7 +120,7 @@ module.exports = function ({ types: t }) {
           const identifier = t.identifier('registerSystem')
           path.pushContainer('specifiers', identifier)
         }
-        if (source.value.includes('component')) {
+        if (source.value.includes('component') || source.value.startsWith('./')) {
           specifiers.forEach((sp) => {
             const componentName = sp.local.name
             const newReg = `registerSystem(${componentName});`
@@ -201,7 +201,9 @@ module.exports = function ({ types: t }) {
               } else {
                 bindVal = `${classVar}`
               }
-              if (collideEvents.includes(cbName)) {
+              if (value.value === 'node') {
+                ret += `\n${compVar}.${cbName}=${classVar}.node;`
+              } else if (collideEvents.includes(cbName)) {
                 ret += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
               } else {
                 ret += `\n${compVar}.${cbName}=${classVar}.${value.value}.bind(${bindVal});`
