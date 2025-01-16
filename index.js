@@ -103,55 +103,51 @@ function attributesToParams(attributes) {
   return `{${props}}`
 }
 
-let currentClassName
-let hasStart = false
-// let hadJSX = false
-let register = ''
 module.exports = function ({ types: t }) {
   return {
-    pre() {
-      register = ''
-    },
     visitor: {
+      Program: {
+        exit(path, state) {
+          if (state.isComponentX) {
+            const logStatement = t.expressionStatement(t.callExpression(t.identifier('registerSystem'), [t.identifier(currentClassName)]))
+            path.pushContainer('body', logStatement)
+          }
+        },
+      },
       ImportDeclaration(path) {
         // console.log(path.node)
-        const { specifiers, source } = path.node
+        const { source } = path.node
         if (source.value === '@safe-engine/pixi' || source.value === 'safex' || source.value === '@safex/cocos') {
           const identifier = t.identifier('registerSystem')
           path.pushContainer('specifiers', identifier)
         }
-        if (source.value.includes('component') || source.value.startsWith('./')) {
-          specifiers.forEach((sp) => {
-            const componentName = sp.local.name
-            const newReg = `registerSystem(${componentName});`
-            if (!register.includes(newReg)) {
-              register += newReg
-            }
-          })
-        }
       },
       ExportDeclaration(path) {
-        hasStart = false
+        // state.hasStart = false
         if (path.node.declaration && path.node.declaration.id) currentClassName = path.node.declaration.id.name
       },
-      ClassDeclaration(path) {
+      ClassDeclaration(path, state) {
         // console.log(path.node.body.body)
-        hasStart = false
-        if (!currentClassName) currentClassName = path.node.id.name
-      },
-      ClassMethod(path) {
-        // console.log(path.node.key.name)
-        if ('start' === path.node.key.name) {
-          hasStart = true
+        state.hasStart = false
+        state.currentClassName = path.node.id.name
+        const { superClass } = path.node
+        if (superClass && superClass.name && superClass.name.includes('ComponentX')) {
+          state.isComponentX = true
         }
       },
-      JSXElement(path) {
+      ClassMethod(path, state) {
+        // console.log(path.node.key.name)
+        if ('start' === path.node.key.name) {
+          state.hasStart = true
+        }
+      },
+      JSXElement(path, state) {
         // hadJSX = true
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = ''
-        let begin = `${register}registerSystem(${currentClassName});`
-        const classVar = getComponentName(currentClassName)
+        let begin = ''
+        const classVar = getComponentName(state.currentClassName)
         function parseJSX(tagName, children, attributes = [], parentVar) {
           const componentName = tagName.name
           // console.log('parseJSX', componentName)
@@ -167,7 +163,7 @@ module.exports = function ({ types: t }) {
           const createComponentString = `\n    const ${compVar} = ${componentName}.create(${params})`
           if (!parentVar) {
             begin += createComponentString
-            begin += `\n   const ${classVar} = ${compVar}.addComponent(new ${currentClassName}())`
+            begin += `\n   const ${classVar} = ${compVar}.addComponent(new ${state.currentClassName}())`
           } else {
             ret += createComponentString
           }
@@ -278,7 +274,7 @@ module.exports = function ({ types: t }) {
           }
         }
         parseJSX(rootTag, children, attributes)
-        if (hasStart) {
+        if (state.hasStart) {
           ret += `\n${classVar}.start();`
         }
         ret += `\n    return ${classVar}`
