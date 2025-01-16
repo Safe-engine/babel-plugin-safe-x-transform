@@ -1,4 +1,5 @@
-/* eslint-disable no-undef */
+/*global console, module*/
+
 const collideEvents = ['onCollisionEnter', 'onCollisionExit', 'onCollisionStay']
 
 function capitalizeFirstLetter(string) {
@@ -109,7 +110,9 @@ module.exports = function ({ types: t }) {
       Program: {
         exit(path, state) {
           if (state.isComponentX) {
-            const logStatement = t.expressionStatement(t.callExpression(t.identifier('registerSystem'), [t.identifier(currentClassName)]))
+            const logStatement = t.expressionStatement(
+              t.callExpression(t.identifier('registerSystem'), [t.identifier(state.currentClassName)]),
+            )
             path.pushContainer('body', logStatement)
           }
         },
@@ -122,9 +125,9 @@ module.exports = function ({ types: t }) {
           path.pushContainer('specifiers', identifier)
         }
       },
-      ExportDeclaration(path) {
+      ExportDeclaration(path, state) {
         // state.hasStart = false
-        if (path.node.declaration && path.node.declaration.id) currentClassName = path.node.declaration.id.name
+        if (path.node.declaration && path.node.declaration.id) state.currentClassName = path.node.declaration.id.name
       },
       ClassDeclaration(path, state) {
         // console.log(path.node.body.body)
