@@ -111,7 +111,15 @@ module.exports = function ({ types: t }) {
   return {
     visitor: {
       Program: {
+        enter(path, state) {
+          const filePath = state.file.opts.filename || "unknown file";
+          // console.log(`Processing ${filePath}`);
+          if (filePath.includes('packages')) {
+            state.skipRest = true;
+          }
+        },
         exit(path, state) {
+          if (state.skipRest) return
           if (state.isComponentX) {
             const logStatement = t.expressionStatement(
               t.callExpression(t.identifier('registerSystem'), [t.identifier(state.currentClassName)]),
@@ -148,6 +156,7 @@ module.exports = function ({ types: t }) {
         }
       },
       JSXElement(path, state) {
+        if (state.skipRest) return
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = ''
