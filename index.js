@@ -133,9 +133,9 @@ module.exports = function ({ types: t }) {
         if (path.node.declaration && path.node.declaration.id) state.currentClassName = path.node.declaration.id.name
       },
       ClassDeclaration(path, state) {
-        // console.log(path.node.body.body)
         state.hasStart = false
         state.currentClassName = path.node.id.name
+        // console.log('state.currentClassName', state.currentClassName)
         const { superClass } = path.node
         if (superClass && superClass.name && superClass.name.includes('ComponentX')) {
           state.isComponentX = true
@@ -148,7 +148,6 @@ module.exports = function ({ types: t }) {
         }
       },
       JSXElement(path, state) {
-        // hadJSX = true
         const { openingElement, children } = path.node
         const { attributes, name: rootTag } = openingElement
         let ret = ''
@@ -160,8 +159,8 @@ module.exports = function ({ types: t }) {
           if (componentName === 'ExtraDataComp') {
             // console.log(parentVar, attributes[1])
             const key = attributes.find(({ name }) => name.name === 'key').value.value
-            const value = attributes.find(({ name }) => name.name === 'value').value.expression.value
-            ret += `\n     ${parentVar}.node.setData('${key}', ${value})`
+            const value = attributes.find(({ name }) => name.name === 'value')
+            ret += `\n     ${parentVar}.node.setData('${key}', ${parseValue(value.value)})`
             return
           }
           const compVar = getComponentName(componentName)
