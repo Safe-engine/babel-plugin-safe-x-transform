@@ -39,6 +39,9 @@ function parseValue(value) {
     case 'Identifier': {
       return value.name
     }
+    case 'ThisExpression': {
+      return 'this'
+    }
     default:
       console.log('not support', type, value)
   }
@@ -262,12 +265,18 @@ module.exports = function ({ types: t }) {
               ret += '\n }'
             } else {
               // console.log('loopVar', type, object, callback.params[1])
-              const { name, left } = callback.params[1]
+              const { name, left, right } = callback.params[1]
               const indexVar = name || left.name
               const loopVar = parseValue(object)
               const itemVar = callback.params[0].name
-              ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
-              ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
+              const startIndex = right.value || 0
+              if (startIndex) {
+                ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopVar}.length + ${startIndex}; ${indexVar}++) {`
+                ret += `\n const ${itemVar} = ${loopVar}[${indexVar} - ${startIndex}]`
+              } else {
+                ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
+                ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
+              }
               const { openingElement, children } = callback.body
               const { attributes, name: rootTag } = openingElement
               // console.log('parse MemberExpression', rootTag, children, attributes)
