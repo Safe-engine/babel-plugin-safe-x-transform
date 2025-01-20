@@ -65,12 +65,16 @@ function parseExpression(expression) {
     }
     case 'CallExpression': {
       const { callee, arguments: args } = expression
-
       return `${parseValue(callee)}(${args.map(parseValue).join(', ')})`
     }
     case 'UnaryExpression': {
       const { operator, argument: args } = expression
       return `${operator}${parseValue(args)}`
+    }
+    case 'ObjectExpression': {
+      const { properties } = expression
+      const props = properties.map(({ key, value }) => `${parseValue(key)}: ${parseValue(value)}`)
+      return `{ ${props.join(',')} }`
     }
     case 'BinaryExpression': {
       const { operator, right, left } = expression
@@ -182,38 +186,12 @@ module.exports = function ({ types: t }) {
           }
           attributes.forEach(({ name, value }) => {
             const attName = name.name
+            const refString = parseValue(value)
+            const rightValue = `${compVar}`
             if (attName === '$ref') {
-              let refString = value.value
-              const isPushList = refString.endsWith('[]')
-              // console.log(refString);
-              if (isPushList) {
-                refString = refString.replace('[]', '')
-              }
-              let leftVar = `${classVar}.${refString}`
-              let rightValue = `${compVar}`
-              if (refString.includes(':')) {
-                const [refVal, compName] = refString.split(':')
-                rightValue = `${compVar}.getComponent(${compName})`
-                leftVar = `${classVar}.${refVal}`
-              }
-              if (isPushList) ret += `\n${leftVar}.push(${rightValue});`
-              else ret += `\n${leftVar} = ${rightValue};`
-            } else if (attName.includes('$')) {
-              const cbName = attName.replace('$', '')
-              let bindVal
-              if (value.value.includes('.')) {
-                const [refVal] = value.value.split('.')
-                bindVal = `${classVar}.${refVal}`
-              } else {
-                bindVal = `${classVar}`
-              }
-              if (value.value === 'node') {
-                ret += `\n${compVar}.${cbName}=${classVar}.node;`
-              } else if (collideEvents.includes(cbName)) {
-                ret += `\n${compVar}.set${capitalizeFirstLetter(cbName)}(${classVar}.${value.value}.bind(${bindVal}));`
-              } else {
-                ret += `\n${compVar}.${cbName}=${classVar}.${value.value}.bind(${bindVal});`
-              }
+              ret += `\n${refString} = ${rightValue};`
+            } else if (attName === '$push') {
+              ret += `\n${refString}.push(${rightValue});`
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
             }
@@ -300,7 +278,7 @@ module.exports = function ({ types: t }) {
           ${ret}
         }()`)
         // console.log(path.node)
-        path.parentPath.parentPath.replaceWith(path.node.callee.body)
+        path.parentPath.replaceWith(path.node.callee.body)
       },
     },
   }
