@@ -114,17 +114,15 @@ module.exports = function ({ types: t }) {
         enter(path, state) {
           const filePath = state.file.opts.filename || "unknown file";
           // console.log(`Processing ${filePath}`);
-          if (filePath.includes('packages')) {
-            state.skipRest = true;
-          }
+          state.skipRest = filePath.includes('packages');
         },
         exit(path, state) {
           if (state.skipRest) return
           if (state.isComponentX) {
-            const logStatement = t.expressionStatement(
+            const registerStatement = t.expressionStatement(
               t.callExpression(t.identifier('registerSystem'), [t.identifier(state.currentClassName)]),
             )
-            path.pushContainer('body', logStatement)
+            path.pushContainer('body', registerStatement)
           }
         },
       },
@@ -143,11 +141,9 @@ module.exports = function ({ types: t }) {
       ClassDeclaration(path, state) {
         state.hasStart = false
         state.currentClassName = path.node.id.name
-        // console.log('state.currentClassName', state.currentClassName)
+        // console.log('currentClassName', state.currentClassName)
         const { superClass } = path.node
-        if (superClass && superClass.name && superClass.name.includes('ComponentX')) {
-          state.isComponentX = true
-        }
+        state.isComponentX = superClass && superClass.name && superClass.name.includes('ComponentX')
       },
       ClassMethod(path, state) {
         // console.log(path.node.key.name)
@@ -177,7 +173,7 @@ module.exports = function ({ types: t }) {
           const createComponentString = `\n    const ${compVar} = ${componentName}.create(${params})`
           if (!parentVar) {
             begin += createComponentString
-            begin += `\n   const ${classVar} = ${compVar}.addComponent(new ${state.currentClassName}())`
+            begin += `\n   const ${classVar} = ${compVar}.addComponent(this)`
           } else {
             ret += createComponentString
           }
