@@ -27,6 +27,7 @@ function parseValue(value) {
     }
     case 'BinaryExpression':
     case 'MemberExpression':
+    case 'UnaryExpression':
     case 'CallExpression': {
       return parseExpression(value)
     }
