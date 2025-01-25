@@ -1,10 +1,5 @@
 /*global console, module*/
 
-const collideEvents = ['onCollisionEnter', 'onCollisionExit', 'onCollisionStay']
-
-function capitalizeFirstLetter(string) {
-  return string.charAt(0).toUpperCase() + string.slice(1)
-}
 function camelCase(str) {
   return str
     .replace(/(?:^\w|[A-Z]|\b\w)/g, function (word, index) {
