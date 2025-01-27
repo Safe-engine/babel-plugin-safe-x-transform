@@ -214,7 +214,7 @@ module.exports = function ({ types: t }) {
               // console.log('callee', loopCount, callback.params[1])
               const { name, left, right } = callback.params[0] || callback.params[1]
               const indexVar = name || left.name
-              const startIndex = right.value || 0
+              const startIndex = right ? right.value : 0
               const loopCount = object.arguments[0].value + startIndex
               ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
               const { type, openingElement, children } = callback.body
@@ -226,7 +226,7 @@ module.exports = function ({ types: t }) {
                 if (object.callee && object.callee.name === 'Array') {
                   const { name, left, right } = callback2.params[0] || callback2.params[1]
                   const indexVar = name || left.name
-                  const startIndex = right.value || 0
+                  const startIndex = right ? right.value : 0
                   const loopCount = object.arguments[0].value + startIndex
                   ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
                   const { openingElement, children } = callback2.body
@@ -247,7 +247,7 @@ module.exports = function ({ types: t }) {
               const indexVar = name || left.name
               const loopVar = parseValue(object)
               const itemVar = callback.params[0].name
-              const startIndex = right.value || 0
+              const startIndex = right ? right.value : 0
               if (startIndex) {
                 ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopVar}.length + ${startIndex}; ${indexVar}++) {`
                 ret += `\n const ${itemVar} = ${loopVar}[${indexVar} - ${startIndex}]`
