@@ -212,7 +212,7 @@ module.exports = function ({ types: t }) {
             const { object } = callee
             if (object.callee && object.callee.name === 'Array') {
               // console.log('callee', loopCount, callback.params[1])
-              const { name, left, right } = callback.params[1]
+              const { name, left, right } = callback.params[0] || callback.params[1]
               const indexVar = name || left.name
               const startIndex = right.value || 0
               const loopCount = object.arguments[0].value + startIndex
@@ -224,7 +224,7 @@ module.exports = function ({ types: t }) {
                 const callback2 = args[0]
                 const { object } = callee
                 if (object.callee && object.callee.name === 'Array') {
-                  const { name, left, right } = callback2.params[1]
+                  const { name, left, right } = callback2.params[0] || callback2.params[1]
                   const indexVar = name || left.name
                   const startIndex = right.value || 0
                   const loopCount = object.arguments[0].value + startIndex
