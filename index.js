@@ -130,8 +130,8 @@ module.exports = function ({ types: t }) {
         // console.log(path.node)
         const { source } = path.node
         if (source.value === '@safe-engine/pixi' || source.value === 'safex' || source.value === '@safex/cocos') {
-          const identifier = t.identifier('registerSystem')
-          path.pushContainer('specifiers', identifier)
+          path.pushContainer('specifiers', t.identifier('registerSystem'))
+          path.pushContainer('specifiers', t.identifier('instantiate'))
         }
       },
       ExportDeclaration(path, state) {
@@ -170,7 +170,7 @@ module.exports = function ({ types: t }) {
           }
           const compVar = getComponentName(componentName)
           const params = attributesToParams(attributes)
-          const createComponentString = `\n    const ${compVar} = ${componentName}.create(${params})`
+          const createComponentString = `\n    const ${compVar} = instantiate(${componentName}, ${params})`
           if (!parentVar) {
             begin += createComponentString
             begin += `\n   const ${classVar} = ${compVar}.addComponent(this)`
