@@ -200,6 +200,8 @@ module.exports = function ({ types: t }) {
             if (type !== 'JSXElement') {
               if (type === 'JSXExpressionContainer') {
                 parseJSXExpressionContainer(expression, compVar)
+              } else if (type === 'CallExpression') {
+                parseJSXExpressionContainer(element, compVar)
               }
               return
             }
@@ -214,12 +216,12 @@ module.exports = function ({ types: t }) {
             // console.log('CallExpression', callee, callback)
             const { object } = callee
             if (object.callee && object.callee.name === 'Array') {
-              // console.log('callee', loopCount, callback.params[1])
               const { name, left, right } = callback.params[0] || callback.params[1]
               const indexVar = name || left.name
               const startIndex = right ? right.value : 0
               const loopCount = object.arguments[0].value + startIndex
               ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
+              // console.log('callee', loopCount, callback.body)
               parseChildren(compVar)(callback.body)
               ret += '\n }'
             } else {
