@@ -192,7 +192,10 @@ module.exports = function ({ types: t }) {
               ret += parseAttribute(value, compVar, attName)
             }
           })
-          children.forEach((element) => {
+          children.forEach(parseChildren(compVar))
+        }
+        function parseChildren(compVar) {
+          return (element) => {
             const { openingElement, children, type, expression } = element
             if (type !== 'JSXElement') {
               if (type === 'JSXExpressionContainer') {
@@ -202,7 +205,7 @@ module.exports = function ({ types: t }) {
             }
             const { attributes, name } = openingElement
             parseJSX(name, children, attributes, compVar)
-          })
+          }
         }
         function parseJSXExpressionContainer(expression, compVar) {
           const { type, callee, arguments: args } = expression
@@ -217,29 +220,7 @@ module.exports = function ({ types: t }) {
               const startIndex = right ? right.value : 0
               const loopCount = object.arguments[0].value + startIndex
               ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
-              const { type, openingElement, children } = callback.body
-              if (type === 'CallExpression') {
-                // console.log('callee', loopCount, callback.body)
-                const { callee, arguments: args } = callback.body
-                const callback2 = args[0]
-                const { object } = callee
-                if (object.callee && object.callee.name === 'Array') {
-                  const { name, left, right } = callback2.params[0] || callback2.params[1]
-                  const indexVar = name || left.name
-                  const startIndex = right ? right.value : 0
-                  const loopCount = object.arguments[0].value + startIndex
-                  ret += `\n for(let ${indexVar} = ${startIndex}; ${indexVar} < ${loopCount}; ${indexVar}++) {`
-                  const { openingElement, children } = callback2.body
-                  const { attributes, name: rootTag } = openingElement
-                  // console.log('parse MemberExpression', rootTag, children, attributes)
-                  parseJSX(rootTag, children, attributes, compVar)
-                  ret += '\n }'
-                }
-              } else {
-                const { attributes, name: rootTag } = openingElement
-                // console.log('parse MemberExpression', rootTag, children, attributes)
-                parseJSX(rootTag, children, attributes, compVar)
-              }
+              parseChildren(compVar)(callback.body)
               ret += '\n }'
             } else {
               // console.log('loopVar', type, object, callback.params[1])
@@ -255,10 +236,7 @@ module.exports = function ({ types: t }) {
                 ret += `\n for(let ${indexVar} = 0; ${indexVar} < ${loopVar}.length; ${indexVar}++) {`
                 ret += `\n const ${itemVar} = ${loopVar}[${indexVar}]`
               }
-              const { openingElement, children } = callback.body
-              const { attributes, name: rootTag } = openingElement
-              // console.log('parse MemberExpression', rootTag, children, attributes)
-              parseJSX(rootTag, children, attributes, compVar)
+              parseChildren(compVar)(callback.body)
               ret += '\n }'
             }
           }
