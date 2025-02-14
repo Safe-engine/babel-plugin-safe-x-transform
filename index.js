@@ -112,9 +112,9 @@ module.exports = function ({ types: t }) {
     visitor: {
       Program: {
         enter(path, state) {
-          const filePath = state.file.opts.filename || "unknown file";
+          const filePath = state.file.opts.filename || 'unknown file'
           // console.log(`Processing ${filePath}`);
-          state.skipRest = filePath.includes('packages');
+          state.skipRest = filePath.includes('packages')
         },
         exit(path, state) {
           if (state.skipRest) return
@@ -186,6 +186,8 @@ module.exports = function ({ types: t }) {
             const rightValue = `${compVar}`
             if (attName === '$ref') {
               ret += `\n${refString} = ${rightValue};`
+            } else if (attName === '$refNode') {
+              ret += `\n${refString} = ${rightValue}.node;`
             } else if (attName === '$push') {
               ret += `\n${refString}.push(${rightValue});`
             } else if (attName === 'node') {
