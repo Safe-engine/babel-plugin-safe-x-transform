@@ -104,7 +104,7 @@ function attributesToParams(attributes, listMethods = []) {
     if (attName === 'node' || attName.includes('$')) return
     const val = parseValue(value)
     // console.log('val', val)
-    if (val.includes('this.') && !val.includes('bind(')) {
+    if (typeof val === 'string' && val.includes('this.') && !val.includes('bind(')) {
       const list = val.split('.')
       if (list.length === 2 && listMethods.includes(list[1])) {
         props += `${attName}: ${val}.bind(this),`
