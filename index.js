@@ -97,12 +97,25 @@ function parseAttribute(value, componentVar, prop) {
   return `\n    ${componentVar}.${prop} = ${parseValue(value)}`
 }
 
-function attributesToParams(attributes) {
+function attributesToParams(attributes, listMethods = []) {
   let props = ''
   attributes.map(({ name, value }) => {
     const attName = name.name
     if (attName === 'node' || attName.includes('$')) return
-    props += `${attName}: ${parseValue(value)},`
+    const val = parseValue(value)
+    // console.log('val', val)
+    if (val.includes('this.') && !val.includes('bind(')) {
+      const list = val.split('.')
+      if (list.length === 2 && listMethods.includes(list[1])) {
+        props += `${attName}: ${val}.bind(this),`
+      } else if (list.length > 2 && list[1] !== 'props') {
+        props += `${attName}: ${val}.bind(this.${list[1]}),`
+      } else {
+        props += `${attName}: ${val},`
+      }
+    } else {
+      props += `${attName}: ${val},`
+    }
   })
   return `{${props}}`
 }
@@ -140,6 +153,7 @@ module.exports = function ({ types: t }) {
       },
       ClassDeclaration(path, state) {
         state.hasStart = false
+        state.listMethods = []
         state.currentClassName = path.node.id.name
         // console.log('currentClassName', state.currentClassName)
         const { superClass } = path.node
@@ -150,6 +164,7 @@ module.exports = function ({ types: t }) {
         if ('start' === path.node.key.name) {
           state.hasStart = true
         }
+        state.listMethods.push(path.node.key.name)
       },
       JSXElement(path, state) {
         if (state.skipRest) return
@@ -169,7 +184,7 @@ module.exports = function ({ types: t }) {
             return
           }
           const compVar = getComponentName(componentName)
-          const params = attributesToParams(attributes)
+          const params = attributesToParams(attributes, state.listMethods)
           const createComponentString = `\n    const ${compVar} = instantiate(${componentName}, ${params})`
           if (!parentVar) {
             begin += createComponentString
