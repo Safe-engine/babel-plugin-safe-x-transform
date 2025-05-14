@@ -142,7 +142,7 @@ module.exports = function ({ types: t }) {
       ImportDeclaration(path) {
         // console.log(path.node)
         const { source } = path.node
-        if (source.value === '@safe-engine/pixi' || source.value === 'safex' || source.value === '@safex/cocos') {
+        if (source.value === '@safe-engine/pixi' || source.value === 'safex' || source.value === '@@safe-engine/cocos') {
           path.pushContainer('specifiers', t.identifier('registerSystem'))
           path.pushContainer('specifiers', t.identifier('instantiate'))
         }
