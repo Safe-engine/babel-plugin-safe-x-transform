@@ -29,6 +29,7 @@ function parseValue(value) {
     case 'StringLiteral': {
       return value.extra.raw
     }
+    case 'BooleanLiteral':
     case 'NumericLiteral': {
       return value.value
     }
@@ -39,7 +40,7 @@ function parseValue(value) {
       return 'this'
     }
     default:
-      console.log('not support', type, value)
+      console.log('parseValue not support', type, value)
   }
 }
 
@@ -50,6 +51,8 @@ function parseExpression(expression) {
       return name
     case 'BooleanLiteral':
       return value
+    case 'ThisExpression':
+      return 'this'
     case 'StringLiteral':
     case 'NumericLiteral':
       return extra.raw
@@ -81,7 +84,7 @@ function parseExpression(expression) {
       return `${parseValue(left)} ${operator} ${parseValue(right)}`
     }
     default:
-      console.log('not support parseExpression', type)
+      console.log('parseExpression not support', type)
   }
 }
 
