@@ -208,6 +208,8 @@ module.exports = function ({ types: t }) {
               ret += `\n${refString} = ${rightValue}.node;`
             } else if (attName === '$push') {
               ret += `\n${refString}.push(${rightValue});`
+            } else if (attName === '$pushNode') {
+              ret += `\n${refString}.push(${rightValue}.node);`
             } else if (attName === 'node') {
               ret += parseAttribute(value, compVar, attName)
             }
