@@ -180,6 +180,8 @@ module.exports = function ({ types: t }) {
         // console.log(path.node.key.name)
         if ('start' === path.node.key.name) {
           state.hasStart = true
+        } else if ('onLoad' === path.node.key.name) {
+          state.hasLoad = true
         }
         state.listMethods.push(path.node.key.name)
       },
@@ -206,6 +208,9 @@ module.exports = function ({ types: t }) {
           if (!parentVar) {
             begin += createComponentString
             begin += `\n   const ${classVar} = ${compVar}.addComponent(this)`
+            if (state.hasLoad) {
+              ret += `\n${classVar}.onLoad();`
+            }
           } else {
             ret += createComponentString
           }
