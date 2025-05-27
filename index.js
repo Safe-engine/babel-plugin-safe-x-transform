@@ -83,6 +83,20 @@ function parseExpression(expression) {
       }
       return `${parseValue(left)} ${operator} ${parseValue(right)}`
     }
+    case 'TemplateLiteral': {
+      const { quasis, expressions } = expression;
+      // console.log('parseExpression ', quasis, expressions)
+      const ret = ["''"];
+      quasis.forEach((q, i) => {
+        if (q.value.raw)
+          ret.push(`"${q.value.raw}"`);
+        if (!q.tail) {
+          const expValue = parseValue(expressions[i]);
+          ret.push(expValue);
+        }
+      });
+      return ret.join(' + ');
+    }
     default:
       console.log('parseExpression not support', type)
   }
@@ -107,7 +121,7 @@ function attributesToParams(attributes, listMethods = []) {
     if (attName === 'node' || attName.includes('$')) return
     const val = parseValue(value)
     // console.log('val', val)
-    if (typeof val === 'string' && val.includes('this.') && !val.includes('bind(')) {
+    if (typeof val === 'string' && val.includes('this.') && !val.includes('bind(') && !val.includes('+')) {
       const list = val.split('.')
       if (list.length === 2 && listMethods.includes(list[1])) {
         props += `${attName}: ${val}.bind(this),`
