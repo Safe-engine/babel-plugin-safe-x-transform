@@ -23,6 +23,7 @@ function parseValue(value) {
     case 'BinaryExpression':
     case 'MemberExpression':
     case 'UnaryExpression':
+    case 'ArrayExpression':
     case 'CallExpression': {
       return parseExpression(value)
     }
@@ -74,6 +75,11 @@ function parseExpression(expression) {
       const { properties } = expression
       const props = properties.map(({ key, value }) => `${parseValue(key)}: ${parseValue(value)}`)
       return `{ ${props.join(',')} }`
+    }
+    case 'ArrayExpression': {
+      const { elements } = expression
+      const props = elements.map(parseValue)
+      return `[${props.join(',')}]`
     }
     case 'BinaryExpression': {
       const { operator, right, left } = expression
