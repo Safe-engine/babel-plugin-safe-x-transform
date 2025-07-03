@@ -90,18 +90,17 @@ function parseExpression(expression) {
       return `${parseValue(left)} ${operator} ${parseValue(right)}`
     }
     case 'TemplateLiteral': {
-      const { quasis, expressions } = expression;
+      const { quasis, expressions } = expression
       // console.log('parseExpression ', quasis, expressions)
-      const ret = ['\'\''];
+      const ret = ["''"]
       quasis.forEach((q, i) => {
-        if (q.value.raw)
-          ret.push(`"${q.value.raw}"`);
+        if (q.value.raw) ret.push(`"${q.value.raw}"`)
         if (!q.tail) {
-          const expValue = parseValue(expressions[i]);
-          ret.push(expValue);
+          const expValue = parseValue(expressions[i])
+          ret.push(expValue)
         }
-      });
-      return ret.join(' + ');
+      })
+      return ret.join(' + ')
     }
     default:
       console.log('parseExpression not support', type)
