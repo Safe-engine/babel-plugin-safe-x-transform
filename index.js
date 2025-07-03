@@ -86,7 +86,7 @@ function parseExpression(expression) {
     case 'TemplateLiteral': {
       const { quasis, expressions } = expression;
       // console.log('parseExpression ', quasis, expressions)
-      const ret = ["''"];
+      const ret = ['\'\''];
       quasis.forEach((q, i) => {
         if (q.value.raw)
           ret.push(`"${q.value.raw}"`);
@@ -102,7 +102,7 @@ function parseExpression(expression) {
   }
 }
 
-function parseAttribute(value, componentVar, prop) {
+function parseNodeAttribute(value, componentVar, prop) {
   if (value.type === 'JSXExpressionContainer' && value.expression.type === 'ObjectExpression') {
     const { properties } = value.expression
     return properties
@@ -230,7 +230,7 @@ module.exports = function ({ types: t }) {
             } else if (attName === '$pushNode') {
               ret += `\n${refString}.push(${rightValue}.node);`
             } else if (attName === 'node') {
-              ret += parseAttribute(value, compVar, attName)
+              ret += parseNodeAttribute(value, compVar, attName)
             }
           })
           children.forEach(parseChildren(compVar))
