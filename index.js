@@ -24,6 +24,7 @@ function parseValue(value) {
     case 'MemberExpression':
     case 'UnaryExpression':
     case 'ArrayExpression':
+    case 'ConditionalExpression':
     case 'CallExpression': {
       return parseExpression(value)
     }
@@ -70,6 +71,10 @@ function parseExpression(expression) {
     case 'UnaryExpression': {
       const { operator, argument: args } = expression
       return `${operator}${parseValue(args)}`
+    }
+    case 'ConditionalExpression': {
+      const { test, consequent, alternate } = expression
+      return `${parseValue(test)}?${parseValue(consequent)}:${parseValue(alternate)}`
     }
     case 'ObjectExpression': {
       const { properties } = expression
