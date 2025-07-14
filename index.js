@@ -267,7 +267,7 @@ module.exports = function ({ types: t }) {
             // console.log('CallExpression', callee, callback)
             const { object } = callee
             if (object.callee && object.callee.name === 'Array') {
-              const { name, left, right } = callback.params[0] || callback.params[1]
+              const { name, left, right } = callback.params[1] || callback.params[0]
               const indexVar = name || left.name
               const startIndex = right ? right.value : 0
               const loopCount = object.arguments[0].value + startIndex
